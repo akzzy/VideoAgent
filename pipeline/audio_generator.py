@@ -9,12 +9,32 @@ def get_model():
     if _model is None:
         from omnivoice import OmniVoice
         print("[AudioGen] Loading OmniVoice model...")
+        
+        # Determine device
+        device = "cuda:0"
+        dtype = torch.float16
+        if torch.cuda.is_available():
+            try:
+                cap = torch.cuda.get_device_capability()
+                # PyTorch 2.9+ dropped support for < sm_70 in their pre-compiled wheels.
+                # The GTX 1070 is sm_61.
+                if cap[0] < 7:
+                    print(f"[AudioGen] Warning: GPU architecture sm_{cap[0]}{cap[1]} not supported by this PyTorch build. Falling back to CPU.")
+                    device = "cpu"
+                    dtype = torch.float32
+            except Exception:
+                device = "cpu"
+                dtype = torch.float32
+        else:
+            device = "cpu"
+            dtype = torch.float32
+
         _model = OmniVoice.from_pretrained(
             "k2-fsa/OmniVoice",
-            device_map="cuda:0",
-            dtype=torch.float16
+            device_map=device,
+            dtype=dtype
         )
-        print("[AudioGen] OmniVoice loaded.")
+        print(f"[AudioGen] OmniVoice loaded on {device}.")
     return _model
 
 def generate_voiceover(script_text: str, ref_audio_path: str, ref_text: str, output_path: str, progress_callback=None):
