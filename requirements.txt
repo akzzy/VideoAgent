@@ -1,0 +1,5 @@
+google-genai
+openai-whisper
+mcp
+python-dotenv
+pydantic

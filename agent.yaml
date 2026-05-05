@@ -1,0 +1,12 @@
+name: Video Agent
+description: Workspace for the automated text-to-video agentic pipeline using Gemini, Whisper, and DaVinci Resolve MCP.
+
+tools:
+  - list_dir
+  - run_command
+  - view_file
+  - write_to_file
+  - replace_file_content
+  - multi_replace_file_content
+  - grep_search
+  - search_web
