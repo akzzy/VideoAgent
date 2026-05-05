@@ -15,14 +15,14 @@ def get_model():
         dtype = torch.float16
         if torch.cuda.is_available():
             try:
-                cap = torch.cuda.get_device_capability()
-                # PyTorch 2.9+ dropped support for < sm_70 in their pre-compiled wheels.
-                # The GTX 1070 is sm_61.
-                if cap[0] < 7:
-                    print(f"[AudioGen] Warning: GPU architecture sm_{cap[0]}{cap[1]} not supported by this PyTorch build. Falling back to CPU.")
-                    device = "cpu"
-                    dtype = torch.float32
-            except Exception:
+                # Test if the current PyTorch build actually supports this GPU architecture
+                # by performing a tiny operation on the GPU. If the architecture was dropped,
+                # this will throw a 'no kernel image' RuntimeError.
+                dummy = torch.zeros(1, device="cuda:0")
+                _ = dummy + 1
+                # If we get here, the GPU is fully supported by this PyTorch build!
+            except Exception as e:
+                print(f"[AudioGen] Warning: GPU not fully supported by this PyTorch build. Falling back to CPU. ({e})")
                 device = "cpu"
                 dtype = torch.float32
         else:
