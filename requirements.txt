@@ -3,3 +3,5 @@ openai-whisper
 mcp
 python-dotenv
 pydantic
+Flask
+stable-ts
