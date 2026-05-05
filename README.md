@@ -18,16 +18,41 @@ cd VideoAgent
 
 ### 3. Set Up the Python Environment
 It's best practice to create a virtual environment so the packages don't conflict with other projects.
+
+**For Modern GPUs (RTX series, etc.):**
 ```bash
 # Create a virtual environment named 'venv'
 python -m venv venv
 
 # Activate it (on Windows)
-venv\Scripts\activate
+.\venv\Scripts\activate
+
+# Install PyTorch with CUDA 12.8 support (optional, but recommended for speed)
+pip install torch==2.8.0+cu128 torchaudio==2.8.0+cu128 --extra-index-url https://download.pytorch.org/whl/cu128
 
 # Install all the packages we saved
 pip install -r requirements.txt
 ```
+
+**For Older GPUs (GTX 1070, GTX Titan X, Pascal/Maxwell architectures):**
+Newer versions of PyTorch (2.9+) have dropped support for older GPU architectures. To run OmniVoice and the video pipeline on the GPU, you MUST use an older Python and PyTorch version:
+1. Install **Python 3.11** or **Python 3.12** from python.org.
+2. Create the virtual environment using that specific version:
+   ```bash
+   py -3.11 -m venv venv
+   ```
+3. Activate the environment:
+   ```bash
+   .\venv\Scripts\activate
+   ```
+4. Install PyTorch 2.5.1 with CUDA 11.8 support:
+   ```bash
+   pip install torch==2.5.1+cu118 torchaudio==2.5.1+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
+   ```
+5. Install the remaining requirements:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 ### 4. Configure Your Keys
 Since we purposefully ignored your `.env` file (to keep your API keys safe), you will need to recreate it on the new machine.
