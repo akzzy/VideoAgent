@@ -15,6 +15,9 @@ app = Flask(__name__)
 PROJECTS_DIR = os.path.join(os.path.dirname(__file__), "projects")
 os.makedirs(PROJECTS_DIR, exist_ok=True)
 
+VOICES_DIR = os.path.join(os.path.dirname(__file__), "ominivoice")
+os.makedirs(VOICES_DIR, exist_ok=True)
+
 # SSE progress queues per project
 _progress_queues: dict[str, queue.Queue] = {}
 
@@ -66,6 +69,17 @@ def list_projects():
         if os.path.isdir(project_path(name)):
             projects.append(project_status(name))
     return jsonify(projects)
+
+
+@app.route("/api/voices", methods=["GET"])
+def list_voices():
+    voices = []
+    if os.path.exists(VOICES_DIR):
+        for name in sorted(os.listdir(VOICES_DIR)):
+            v_dir = os.path.join(VOICES_DIR, name)
+            if os.path.isdir(v_dir):
+                voices.append({"id": name, "name": name.replace("_", " ").title()})
+    return jsonify(voices)
 
 
 @app.route("/api/projects", methods=["POST"])
@@ -121,6 +135,100 @@ def upload_audio(name):
     save_path = os.path.join(p, f"audio.{ext}")
     file.save(save_path)
     return jsonify({"success": True, "filename": f"audio.{ext}"})
+
+
+@app.route("/api/projects/<name>/generate-audio", methods=["POST"])
+def generate_audio(name):
+    p = project_path(name)
+    if not os.path.isdir(p):
+        return jsonify({"error": "Project not found"}), 404
+
+    data = request.json
+    voice_id = data.get("voice")
+    if not voice_id:
+        return jsonify({"error": "Voice ID is required"}), 400
+
+    script_path = os.path.join(p, "script.txt")
+    if not os.path.exists(script_path):
+        return jsonify({"error": "Script not found. Save script first."}), 400
+
+    with open(script_path, "r", encoding="utf-8") as f:
+        script_text = f.read().strip()
+
+    if not script_text:
+        return jsonify({"error": "Script is empty."}), 400
+
+    # Locate voice references
+    voice_dir = os.path.join(VOICES_DIR, voice_id)
+    if not os.path.isdir(voice_dir):
+        return jsonify({"error": "Voice not found"}), 404
+
+    ref_audio_path = None
+    for ext in ["wav", "mp3"]:
+        candidate = os.path.join(voice_dir, f"reference_audio.{ext}")
+        if os.path.exists(candidate):
+            ref_audio_path = candidate
+            break
+
+    ref_text_path = os.path.join(voice_dir, "reference_transcript.txt")
+
+    if not ref_audio_path or not os.path.exists(ref_text_path):
+        return jsonify({"error": f"Voice {voice_id} is missing reference_audio.(wav|mp3) or reference_transcript.txt"}), 400
+
+    with open(ref_text_path, "r", encoding="utf-8") as f:
+        ref_text = f.read().strip()
+
+    output_path = os.path.join(p, "audio.wav")
+    
+    # Remove old audio files
+    for old_ext in ("wav", "mp3"):
+        old = os.path.join(p, f"audio.{old_ext}")
+        if os.path.exists(old):
+            os.remove(old)
+
+    # Initialize progress queue
+    _progress_queues[name + "_audio"] = queue.Queue()
+
+    def progress_callback(status_msg, progress_pct):
+        q = _progress_queues.get(name + "_audio")
+        if q:
+            q.put({"status": status_msg, "progress": progress_pct})
+
+    def run_async():
+        try:
+            from pipeline.audio_generator import generate_voiceover
+            generate_voiceover(script_text, ref_audio_path, ref_text, output_path, progress_callback)
+        except Exception as e:
+            print(f"[Audio] Thread error: {e}")
+            q = _progress_queues.get(name + "_audio")
+            if q:
+                q.put({"error": str(e)})
+        finally:
+            q = _progress_queues.get(name + "_audio")
+            if q:
+                q.put({"done": True, "filename": "audio.wav"})
+
+    t = threading.Thread(target=run_async, daemon=False)
+    t.start()
+
+    return jsonify({"success": True, "message": "Audio generation started"})
+
+
+@app.route("/api/projects/<name>/audio-progress")
+def audio_progress_stream(name):
+    def event_stream():
+        q = _progress_queues.get(name + "_audio", queue.Queue())
+        while True:
+            try:
+                msg = q.get(timeout=120)
+                yield f"data: {json.dumps(msg)}\n\n"
+                if msg.get("done") or msg.get("error"):
+                    break
+            except queue.Empty:
+                yield "data: {\"heartbeat\": true}\n\n"
+
+    return Response(event_stream(), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.route("/api/projects/<name>/settings", methods=["GET"])
