@@ -5,3 +5,5 @@ python-dotenv
 pydantic
 Flask
 stable-ts
+omnivoice
+soundfile
