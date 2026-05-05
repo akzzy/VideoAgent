@@ -47,3 +47,5 @@ master_script.json
 
 # User requested
 projects/
+
+.env.template
