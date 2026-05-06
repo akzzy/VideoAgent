@@ -49,3 +49,4 @@ master_script.json
 projects/
 
 .env.template
+.env
