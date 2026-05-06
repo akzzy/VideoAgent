@@ -31,23 +31,21 @@ def generate_scenes(script_text: str, use_character: bool = False, style: str = 
         character_instruction = f"""
     IMPORTANT: This video features a CONSISTENT CHARACTER throughout. A reference image will be provided during generation.
     
-    CHARACTER CONSISTENCY:
+    CHARACTER CONSISTENCY & POSING:
     - Study the reference image carefully. Keep the character's appearance (face, hair, clothing, proportions) the SAME in every image.
     - Always refer to them as "the character". Do NOT invent names or change their look.
-    - Do NOT copy the pose or background from the reference image — only the character's appearance.
+    - CRITICAL: The reference image shows the character in a neutral standing pose. Do NOT copy this pose! You MUST explicitly describe the character in a NEW, DYNAMIC pose performing an action relevant to the scene (e.g., "sitting at a desk typing", "running", "pointing excitedly", "looking confused").
 
-    ART STYLE:
+    ART STYLE & COMPOSITION:
     - The visual style is: {style_desc}
     - ALL elements in the image (character, background, objects, props) must match this SAME style.
-    - Do NOT mix styles (e.g. no photorealistic background with a cartoon character).
-
-    SCENE COMPOSITION:
-    - Avoid plain white or solid-color empty backgrounds. Always include SOME environment or context.
-    - Use your judgment on scene complexity based on what the narration calls for:
-      * Dramatic or action-heavy narration → rich detailed scenes with props, objects, dynamic composition
-      * Simple statements or transitions → cleaner, minimal scenes with subtle backgrounds are fine
-      * Emotional or reflective moments → close-ups with atmospheric backgrounds work well
-    - The goal is variety — not every image needs to be packed with elements. Mix it up naturally.
+    - CRITICAL: Avoid plain white or solid-color empty backgrounds. ALWAYS describe a fully realized environment or detailed background elements (e.g., "a busy office with large windows", "a textured wall with abstract shapes", "a bustling city street").
+    """
+    else:
+        character_instruction = f"""
+    ART STYLE & COMPOSITION:
+    - The visual style is: {style_desc}
+    - CRITICAL: Avoid plain white or solid-color empty backgrounds. ALWAYS describe a fully realized environment or detailed background elements.
     """
 
     system_prompt = f"""You are a video production assistant. 
@@ -58,11 +56,13 @@ def generate_scenes(script_text: str, use_character: bool = False, style: str = 
     - At ~3 words/second, each scene should last approximately 4-6 seconds when spoken.
     - Do NOT create scenes longer than ~20 words. Split them if needed.
     - Do NOT create scenes shorter than ~8 words unless it's a very short impactful line.
-    - Example: "Fifty-three thousand dollars. That's your net worth. Not your income. Not your potential. Your position. You check it on your phone while sitting on the edge of your bed."
-      Should become TWO scenes:
-      Scene A: "Fifty-three thousand dollars. That's your net worth. Not your income."
-      Scene B: "Not your potential. Your position. You check it on your phone while sitting on the edge of your bed."
+    
+    TEXT IN IMAGES:
+    - CRITICAL: Do NOT request long sentences, paragraphs, or banners of text in the generated images.
+    - Rely on visual storytelling rather than written text. If you must include text, keep it to 1-2 very small words max (e.g., a sign that says "BANK").
+
     {character_instruction}
+    
     For each scene, create a detailed, vivid image prompt suitable for an AI image generator.
     The image prompt should describe a stunning visual that matches the script text.
     Make the prompts specific, descriptive, and visually rich.
