@@ -264,16 +264,21 @@ def generate_prompts(name):
     # Check settings
     use_character = False
     style = "cinematic"
+    scene_duration = 5
+    creative_direction = ""
     settings_path = os.path.join(p, "settings.json")
     if os.path.exists(settings_path):
         with open(settings_path, encoding="utf-8") as f:
             settings = json.load(f)
             use_character = settings.get("use_character", False)
             style = settings.get("style", "cinematic")
+            scene_duration = settings.get("scene_duration", 5)
+            creative_direction = settings.get("creative_direction", "")
 
     try:
         from pipeline.scene_breakdown import generate_scenes
-        scenes = generate_scenes(script_text, use_character=use_character, style=style)
+        scenes = generate_scenes(script_text, use_character=use_character, style=style,
+                                 target_duration=scene_duration, creative_direction=creative_direction)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -465,12 +470,19 @@ def open_in_resolve(name):
     except Exception as e:
         print(f"[Resolve] Could not check/launch Resolve: {e}")
 
-    # 2. Use Python 3.13 (compatible with fusionscript.dll) to import
+    fuscript_exe = os.path.join(resolve_dir, "fuscript.exe")
+
+    # 2. Use DaVinci Resolve's built-in python interpreter (fuscript) to avoid venv issues
     try:
+        cmd = [fuscript_exe, helper_script, name, abs_xml]
+        print(f"\n[Resolve DEBUG] Executing command: {' '.join(cmd)}")
         proc = sp.run(
-            ["py", "-3.13", helper_script, name, abs_xml],
+            cmd,
             capture_output=True, text=True, timeout=60
         )
+        print(f"[Resolve DEBUG] Exit Code: {proc.returncode}")
+        print(f"[Resolve DEBUG] Stdout:\n{proc.stdout}")
+        print(f"[Resolve DEBUG] Stderr:\n{proc.stderr}\n")
 
         # Parse the JSON output from the helper script
         output = proc.stdout.strip()

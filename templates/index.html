@@ -1,607 +1,1183 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Video Pipeline</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a28;--border:#2a2a3a;--accent:#6c5ce7;--accent2:#a29bfe;--text:#e8e8f0;--text2:#8888a0;--success:#00b894;--error:#e17055;--warn:#fdcb6e}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-button{font-family:inherit;cursor:pointer;border:none;border-radius:8px;font-weight:500;transition:all .2s}
-input,textarea{font-family:inherit;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;outline:none;transition:border .2s}
-input:focus,textarea:focus{border-color:var(--accent)}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Video Pipeline</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
 
-/* Header */
-.header{padding:20px 40px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface)}
-.header h1{font-size:1.4rem;font-weight:600;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.header span{color:var(--text2);font-size:.85rem}
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface2: #1a1a28;
+      --border: #2a2a3a;
+      --accent: #6c5ce7;
+      --accent2: #a29bfe;
+      --text: #e8e8f0;
+      --text2: #8888a0;
+      --success: #00b894;
+      --error: #e17055;
+      --warn: #fdcb6e
+    }
 
-/* Container */
-.container{max-width:1100px;margin:0 auto;padding:40px 20px}
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh
+    }
 
-/* Project Grid */
-.project-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:24px}
-.project-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;cursor:pointer;transition:all .25s}
-.project-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 30px rgba(108,92,231,.15)}
-.project-card h3{font-size:1.1rem;margin-bottom:8px}
-.project-card .meta{color:var(--text2);font-size:.8rem}
-.project-card .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:600;margin-top:10px}
-.badge-1{background:rgba(108,92,231,.2);color:var(--accent2)}
-.badge-2{background:rgba(253,203,110,.2);color:var(--warn)}
-.badge-3{background:rgba(0,184,148,.15);color:var(--success)}
-.badge-4{background:rgba(0,184,148,.3);color:var(--success)}
-.badge-5{background:rgba(0,184,148,.5);color:#fff}
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all .2s
+    }
 
-/* New Project Card */
-.new-project-card{border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--text2);min-height:140px}
-.new-project-card:hover{border-color:var(--accent);color:var(--accent2)}
-.new-project-card .plus{font-size:2rem;font-weight:300}
+    input,
+    textarea {
+      font-family: inherit;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      outline: none;
+      transition: border .2s
+    }
 
-/* Modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100}
-.modal-overlay.active{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:420px;max-width:90vw}
-.modal h2{margin-bottom:20px;font-size:1.2rem}
-.modal input{width:100%;margin-bottom:16px}
-.modal .actions{display:flex;gap:10px;justify-content:flex-end}
+    input:focus,
+    textarea:focus {
+      border-color: var(--accent)
+    }
 
-/* Buttons */
-.btn{padding:10px 20px;font-size:.9rem}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{background:#7c6cf7}
-.btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
-.btn-secondary:hover{border-color:var(--accent)}
-.btn-success{background:var(--success);color:#fff}
-.btn-success:hover{background:#00d2a0}
-.btn-lg{padding:14px 28px;font-size:1rem}
+    /* Header */
+    .header {
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface)
+    }
 
-/* Stepper */
-.stepper{display:flex;align-items:center;gap:4px;margin-bottom:32px}
-.step{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;font-size:.85rem;color:var(--text2);cursor:pointer;transition:all .2s}
-.step.active{background:var(--accent);color:#fff}
-.step.done{background:rgba(0,184,148,.15);color:var(--success)}
-.step-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:600;background:var(--surface2);flex-shrink:0}
-.step.active .step-num{background:rgba(255,255,255,.2)}
-.step.done .step-num{background:rgba(0,184,148,.3)}
-.step-arrow{color:var(--border);margin:0 2px}
+    .header h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent
+    }
 
-/* Panels */
-.panel{display:none;animation:fadeIn .3s}
-.panel.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.panel-title{font-size:1.3rem;font-weight:600;margin-bottom:8px}
-.panel-desc{color:var(--text2);font-size:.9rem;margin-bottom:24px}
-textarea.script-input{width:100%;height:250px;resize:vertical;font-size:.95rem;line-height:1.6}
+    .header span {
+      color: var(--text2);
+      font-size: .85rem
+    }
 
-/* Upload zone */
-.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text2)}
-.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(108,92,231,.05)}
-.upload-zone .icon{font-size:2.5rem;margin-bottom:8px}
-.upload-zone input{display:none}
-.audio-info{margin-top:16px;padding:16px;background:var(--surface2);border-radius:8px;display:none;align-items:center;gap:12px}
-.audio-info.visible{display:flex}
-.audio-info .name{font-weight:500}
+    /* Container */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px
+    }
 
-/* Scene Table */
-.scene-table{width:100%;border-collapse:collapse;margin-top:16px}
-.scene-table th{text-align:left;padding:10px 12px;font-size:.8rem;color:var(--text2);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px}
-.scene-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;font-size:.9rem}
-.scene-table td:first-child{width:50px;color:var(--accent2);font-weight:600}
-.scene-table textarea{width:100%;min-height:60px;resize:vertical;font-size:.85rem;line-height:1.4}
+    /* Project Grid */
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 24px
+    }
 
-/* Progress */
-.progress-bar{width:100%;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;margin:16px 0}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--success));border-radius:4px;transition:width .5s;width:0}
-.progress-text{color:var(--text2);font-size:.85rem;margin-bottom:8px}
+    .project-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      cursor: pointer;
+      transition: all .25s
+    }
 
-/* Image Grid */
-.image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:20px}
-.image-thumb{border-radius:8px;overflow:hidden;border:1px solid var(--border);aspect-ratio:16/9;background:var(--surface2);position:relative}
-.image-thumb img{width:100%;height:100%;object-fit:cover}
-.image-thumb .label{position:absolute;bottom:0;left:0;right:0;padding:6px;background:rgba(0,0,0,.7);font-size:.75rem;text-align:center}
+    .project-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(108, 92, 231, .15)
+    }
 
-/* Status message */
-.status-msg{padding:16px;border-radius:8px;margin-top:16px;font-size:.9rem}
-.status-msg.ok{background:rgba(0,184,148,.1);color:var(--success);border:1px solid rgba(0,184,148,.3)}
-.status-msg.err{background:rgba(225,112,85,.1);color:var(--error);border:1px solid rgba(225,112,85,.3)}
-.status-msg.loading{background:rgba(108,92,231,.1);color:var(--accent2);border:1px solid rgba(108,92,231,.3)}
+    .project-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 8px
+    }
 
-/* Back button */
-.back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--text2);font-size:.9rem;margin-bottom:20px;cursor:pointer;background:none;padding:8px 0}
-.back-btn:hover{color:var(--text)}
+    .project-card .meta {
+      color: var(--text2);
+      font-size: .8rem
+    }
 
-/* Spinner */
-.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;margin-right:8px}
-@keyframes spin{to{transform:rotate(360deg)}}
+    .project-card .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .7rem;
+      font-weight: 600;
+      margin-top: 10px
+    }
 
-/* Toggle Switch */
-.toggle-row{display:flex;align-items:center;gap:12px;margin-top:20px;padding:16px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)}
-.toggle-row .toggle-info{flex:1}
-.toggle-row .toggle-label{font-weight:500;font-size:.95rem}
-.toggle-row .toggle-desc{color:var(--text2);font-size:.8rem;margin-top:2px}
-.toggle-switch{position:relative;width:48px;height:26px;flex-shrink:0}
-.toggle-switch input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:26px;cursor:pointer;transition:all .3s}
-.toggle-slider:before{content:'';position:absolute;width:20px;height:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:all .3s}
-.toggle-switch input:checked+.toggle-slider{background:var(--accent)}
-.toggle-switch input:checked+.toggle-slider:before{transform:translateX(22px)}
+    .badge-1 {
+      background: rgba(108, 92, 231, .2);
+      color: var(--accent2)
+    }
 
-/* Style Select */
-.style-row{display:flex;align-items:center;gap:12px;margin-top:12px;padding:16px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)}
-.style-row .toggle-info{flex:1}
-.style-select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.9rem;font-family:inherit;cursor:pointer;min-width:180px;outline:none;transition:border .2s}
-.style-select:focus{border-color:var(--accent)}
-.style-select option{background:var(--surface);color:var(--text)}
-</style>
+    .badge-2 {
+      background: rgba(253, 203, 110, .2);
+      color: var(--warn)
+    }
+
+    .badge-3 {
+      background: rgba(0, 184, 148, .15);
+      color: var(--success)
+    }
+
+    .badge-4 {
+      background: rgba(0, 184, 148, .3);
+      color: var(--success)
+    }
+
+    .badge-5 {
+      background: rgba(0, 184, 148, .5);
+      color: #fff
+    }
+
+    /* New Project Card */
+    .new-project-card {
+      border: 2px dashed var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--text2);
+      min-height: 140px
+    }
+
+    .new-project-card:hover {
+      border-color: var(--accent);
+      color: var(--accent2)
+    }
+
+    .new-project-card .plus {
+      font-size: 2rem;
+      font-weight: 300
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100
+    }
+
+    .modal-overlay.active {
+      display: flex
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 420px;
+      max-width: 90vw
+    }
+
+    .modal h2 {
+      margin-bottom: 20px;
+      font-size: 1.2rem
+    }
+
+    .modal input {
+      width: 100%;
+      margin-bottom: 16px
+    }
+
+    .modal .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      font-size: .9rem
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff
+    }
+
+    .btn-primary:hover {
+      background: #7c6cf7
+    }
+
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text2);
+      border: 1px solid var(--border)
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent)
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: #fff
+    }
+
+    .btn-success:hover {
+      background: #00d2a0
+    }
+
+    .btn-lg {
+      padding: 14px 28px;
+      font-size: 1rem
+    }
+
+    /* Stepper */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 32px
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: .85rem;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all .2s
+    }
+
+    .step.active {
+      background: var(--accent);
+      color: #fff
+    }
+
+    .step.done {
+      background: rgba(0, 184, 148, .15);
+      color: var(--success)
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .75rem;
+      font-weight: 600;
+      background: var(--surface2);
+      flex-shrink: 0
+    }
+
+    .step.active .step-num {
+      background: rgba(255, 255, 255, .2)
+    }
+
+    .step.done .step-num {
+      background: rgba(0, 184, 148, .3)
+    }
+
+    .step-arrow {
+      color: var(--border);
+      margin: 0 2px
+    }
+
+    /* Panels */
+    .panel {
+      display: none;
+      animation: fadeIn .3s
+    }
+
+    .panel.active {
+      display: block
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .panel-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 8px
+    }
+
+    .panel-desc {
+      color: var(--text2);
+      font-size: .9rem;
+      margin-bottom: 24px
+    }
+
+    textarea.script-input {
+      width: 100%;
+      height: 250px;
+      resize: vertical;
+      font-size: .95rem;
+      line-height: 1.6
+    }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      color: var(--text2)
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(108, 92, 231, .05)
+    }
+
+    .upload-zone .icon {
+      font-size: 2.5rem;
+      margin-bottom: 8px
+    }
+
+    .upload-zone input {
+      display: none
+    }
+
+    .audio-info {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--surface2);
+      border-radius: 8px;
+      display: none;
+      align-items: center;
+      gap: 12px
+    }
+
+    .audio-info.visible {
+      display: flex
+    }
+
+    .audio-info .name {
+      font-weight: 500
+    }
+
+    /* Scene Table */
+    .scene-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px
+    }
+
+    .scene-table th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: .8rem;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      letter-spacing: .5px
+    }
+
+    .scene-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      font-size: .9rem
+    }
+
+    .scene-table td:first-child {
+      width: 50px;
+      color: var(--accent2);
+      font-weight: 600
+    }
+
+    .scene-table textarea {
+      width: 100%;
+      min-height: 60px;
+      resize: vertical;
+      font-size: .85rem;
+      line-height: 1.4
+    }
+
+    /* Progress */
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 16px 0
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      border-radius: 4px;
+      transition: width .5s;
+      width: 0
+    }
+
+    .progress-text {
+      color: var(--text2);
+      font-size: .85rem;
+      margin-bottom: 8px
+    }
+
+    /* Image Grid */
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 20px
+    }
+
+    .image-thumb {
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      aspect-ratio: 16/9;
+      background: var(--surface2);
+      position: relative
+    }
+
+    .image-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover
+    }
+
+    .image-thumb .label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 6px;
+      background: rgba(0, 0, 0, .7);
+      font-size: .75rem;
+      text-align: center
+    }
+
+    /* Status message */
+    .status-msg {
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+      font-size: .9rem
+    }
+
+    .status-msg.ok {
+      background: rgba(0, 184, 148, .1);
+      color: var(--success);
+      border: 1px solid rgba(0, 184, 148, .3)
+    }
+
+    .status-msg.err {
+      background: rgba(225, 112, 85, .1);
+      color: var(--error);
+      border: 1px solid rgba(225, 112, 85, .3)
+    }
+
+    .status-msg.loading {
+      background: rgba(108, 92, 231, .1);
+      color: var(--accent2);
+      border: 1px solid rgba(108, 92, 231, .3)
+    }
+
+    /* Back button */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text2);
+      font-size: .9rem;
+      margin-bottom: 20px;
+      cursor: pointer;
+      background: none;
+      padding: 8px 0
+    }
+
+    .back-btn:hover {
+      color: var(--text)
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      margin-right: 8px
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    /* Toggle Switch */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--surface2);
+      border-radius: 10px;
+      border: 1px solid var(--border)
+    }
+
+    .toggle-row .toggle-info {
+      flex: 1
+    }
+
+    .toggle-row .toggle-label {
+      font-weight: 500;
+      font-size: .95rem
+    }
+
+    .toggle-row .toggle-desc {
+      color: var(--text2);
+      font-size: .8rem;
+      margin-top: 2px
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      flex-shrink: 0
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 26px;
+      cursor: pointer;
+      transition: all .3s
+    }
+
+    .toggle-slider:before {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: all .3s
+    }
+
+    .toggle-switch input:checked+.toggle-slider {
+      background: var(--accent)
+    }
+
+    .toggle-switch input:checked+.toggle-slider:before {
+      transform: translateX(22px)
+    }
+
+    /* Style Select */
+    .style-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 12px;
+      padding: 16px;
+      background: var(--surface2);
+      border-radius: 10px;
+      border: 1px solid var(--border)
+    }
+
+    .style-row .toggle-info {
+      flex: 1
+    }
+
+    .style-select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: .9rem;
+      font-family: inherit;
+      cursor: pointer;
+      min-width: 180px;
+      outline: none;
+      transition: border .2s
+    }
+
+    .style-select:focus {
+      border-color: var(--accent)
+    }
+
+    .style-select option {
+      background: var(--surface);
+      color: var(--text)
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="header">
-  <h1>⚡ AI Video Pipeline</h1>
-  <span>Script → Images → Video</span>
-</div>
-
-<div class="container">
-  <!-- HOME VIEW -->
-  <div id="home-view">
-    <h2 style="margin-bottom:4px">Your Projects</h2>
-    <p style="color:var(--text2);font-size:.9rem">Select a project or create a new one</p>
-    <div class="project-grid" id="project-grid"></div>
+  <div class="header">
+    <h1>⚡ AI Video Pipeline</h1>
+    <span>Script → Images → Video</span>
   </div>
 
-  <!-- PROJECT VIEW -->
-  <div id="project-view" style="display:none">
-    <button class="back-btn" onclick="showHome()">← Back to Projects</button>
-    <h2 id="proj-title" style="font-size:1.5rem;margin-bottom:20px"></h2>
-
-    <div class="stepper" id="stepper"></div>
-
-    <!-- Step 1: Script -->
-    <div class="panel" id="panel-1">
-      <div class="panel-title">📝 Paste Your Script</div>
-      <div class="panel-desc">Paste the narration script for your video</div>
-      <textarea class="script-input" id="script-input" placeholder="Paste your video script here..."></textarea>
-      <div style="margin-top:16px;display:flex;gap:10px">
-        <button class="btn btn-primary btn-lg" onclick="saveScript()">Save Script</button>
-      </div>
-      <div id="script-status"></div>
+  <div class="container">
+    <!-- HOME VIEW -->
+    <div id="home-view">
+      <h2 style="margin-bottom:4px">Your Projects</h2>
+      <p style="color:var(--text2);font-size:.9rem">Select a project or create a new one</p>
+      <div class="project-grid" id="project-grid"></div>
     </div>
 
-    <!-- Step 2: Audio -->
-    <div class="panel" id="panel-2">
-      <div class="panel-title">🎙️ Audio Generation / Upload</div>
-      <div class="panel-desc">Generate voiceover using OmniVoice OR upload your own audio</div>
+    <!-- PROJECT VIEW -->
+    <div id="project-view" style="display:none">
+      <button class="back-btn" onclick="showHome()">← Back to Projects</button>
+      <h2 id="proj-title" style="font-size:1.5rem;margin-bottom:20px"></h2>
 
-      <!-- Voice Generation -->
-      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom: 20px;">
-        <h3 style="margin-bottom:12px; font-size:1.05rem;">🗣️ Clone Voice (OmniVoice)</h3>
-        <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
-          <select class="style-select" id="voice-select" style="flex:1;">
-            <option value="">Loading voices...</option>
-          </select>
-          <button class="btn btn-primary" id="gen-audio-btn" onclick="generateAudio()">Generate Voiceover</button>
-        </div>
-        <div class="progress-text" id="audio-progress-text" style="display:none; margin-bottom:4px;"></div>
-        <div class="progress-bar" id="audio-progress-bar" style="display:none; margin-top:0;"><div class="progress-fill" id="audio-progress-fill"></div></div>
-      </div>
+      <div class="stepper" id="stepper"></div>
 
-      <div style="text-align:center; color:var(--text2); margin-bottom:20px;">— OR —</div>
-
-      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('audio-file').click()">
-        <div class="icon">🎵</div>
-        <div>Click or drag & drop audio file here</div>
-        <div style="font-size:.8rem;margin-top:4px">WAV or MP3</div>
-        <input type="file" id="audio-file" accept=".wav,.mp3">
-      </div>
-      <div class="audio-info" id="audio-info">
-        <span>🎵</span>
-        <span class="name" id="audio-name"></span>
-        <span style="color:var(--success)">✓ Uploaded</span>
-      </div>
-      <div id="audio-status"></div>
-
-      <div class="toggle-row">
-        <div class="toggle-info">
-          <div class="toggle-label">Use Character Reference</div>
-          <div class="toggle-desc">Enable to include a character (base_image.png) in every scene prompt and generation</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="use-character" onchange="saveCharacterSetting()">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <div class="style-row">
-        <div class="toggle-info">
-          <div class="toggle-label">Image Style</div>
-          <div class="toggle-desc">Visual style applied to all generated image prompts</div>
-        </div>
-        <select class="style-select" id="style-select" onchange="saveSettings()">
-          <option value="cinematic">Cinematic</option>
-          <option value="2d_cartoon">2D Cartoon</option>
-          <option value="anime">Anime</option>
-          <option value="realistic">Realistic</option>
-          <option value="watercolor">Watercolor</option>
-          <option value="3d_render">3D Render (Pixar)</option>
-          <option value="comic_book">Comic Book</option>
-          <option value="oil_painting">Oil Painting</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Step 3: Generate Prompts -->
-    <div class="panel" id="panel-3">
-      <div class="panel-title">🎬 Scene Breakdown & Image Prompts</div>
-      <div class="panel-desc">Generate and review image prompts for each scene</div>
-      <button class="btn btn-primary btn-lg" id="gen-prompts-btn" onclick="generatePrompts()">Generate Image Prompts</button>
-      <div id="prompts-status"></div>
-      <div id="scenes-table-wrap" style="display:none">
-        <table class="scene-table">
-          <thead><tr><th>#</th><th>Script Text</th><th>Image Prompt (editable)</th></tr></thead>
-          <tbody id="scenes-tbody"></tbody>
-        </table>
+      <!-- Step 1: Script -->
+      <div class="panel" id="panel-1">
+        <div class="panel-title">📝 Paste Your Script</div>
+        <div class="panel-desc">Paste the narration script for your video</div>
+        <textarea class="script-input" id="script-input" placeholder="Paste your video script here..."></textarea>
         <div style="margin-top:16px;display:flex;gap:10px">
-          <button class="btn btn-success btn-lg" onclick="saveScenes()">Save & Continue →</button>
+          <button class="btn btn-primary btn-lg" onclick="saveScript()">Save Script</button>
+        </div>
+        <div id="script-status"></div>
+      </div>
+
+      <!-- Step 2: Audio -->
+      <div class="panel" id="panel-2">
+        <div class="panel-title">🎙️ Audio Generation / Upload</div>
+        <div class="panel-desc">Generate voiceover using OmniVoice OR upload your own audio</div>
+
+        <!-- Voice Generation -->
+        <div
+          style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom: 20px;">
+          <h3 style="margin-bottom:12px; font-size:1.05rem;">🗣️ Clone Voice (OmniVoice)</h3>
+          <div style="display:flex; gap:12px; align-items:center; margin-bottom:16px;">
+            <select class="style-select" id="voice-select" style="flex:1;">
+              <option value="">Loading voices...</option>
+            </select>
+            <button class="btn btn-primary" id="gen-audio-btn" onclick="generateAudio()">Generate Voiceover</button>
+          </div>
+          <div class="progress-text" id="audio-progress-text" style="display:none; margin-bottom:4px;"></div>
+          <div class="progress-bar" id="audio-progress-bar" style="display:none; margin-top:0;">
+            <div class="progress-fill" id="audio-progress-fill"></div>
+          </div>
+        </div>
+
+        <div style="text-align:center; color:var(--text2); margin-bottom:20px;">— OR —</div>
+
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('audio-file').click()">
+          <div class="icon">🎵</div>
+          <div>Click or drag & drop audio file here</div>
+          <div style="font-size:.8rem;margin-top:4px">WAV or MP3</div>
+          <input type="file" id="audio-file" accept=".wav,.mp3">
+        </div>
+        <div class="audio-info" id="audio-info">
+          <span>🎵</span>
+          <span class="name" id="audio-name"></span>
+          <span style="color:var(--success)">✓ Uploaded</span>
+        </div>
+        <div id="audio-status"></div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Use Character Reference</div>
+            <div class="toggle-desc">Enable to include a character (base_image.png) in every scene prompt and generation
+            </div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="use-character" onchange="saveCharacterSetting()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="style-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Image Style</div>
+            <div class="toggle-desc">Visual style applied to all generated image prompts</div>
+          </div>
+          <select class="style-select" id="style-select" onchange="saveSettings()">
+            <option value="cinematic">Cinematic</option>
+            <option value="2d_cartoon">2D Cartoon</option>
+            <option value="anime">Anime</option>
+            <option value="realistic">Realistic</option>
+            <option value="watercolor">Watercolor</option>
+            <option value="3d_render">3D Render (Pixar)</option>
+            <option value="comic_book">Comic Book</option>
+            <option value="oil_painting">Oil Painting</option>
+          </select>
+        </div>
+
+        <div class="style-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Scene Duration</div>
+            <div class="toggle-desc">Target duration for each scene (affects how often images change)</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <input type="range" id="duration-slider" min="2" max="10" value="5" step="1" oninput="document.getElementById('duration-val').textContent = this.value + 's'; saveSettings()" style="width: 130px; cursor: pointer;">
+            <span id="duration-val" style="font-weight:600; min-width:30px; text-align:right;">5s</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Step 4: Generate Images -->
-    <div class="panel" id="panel-4">
-      <div class="panel-title">🖼️ Generate Images</div>
-      <div class="panel-desc">Images will be generated via Google Flow (Edge must be closed first!)</div>
-      <button class="btn btn-primary btn-lg" id="gen-images-btn" onclick="generateImages()">Generate Images</button>
-      <div class="progress-text" id="img-progress-text" style="display:none"></div>
-      <div class="progress-bar" id="img-progress-bar" style="display:none"><div class="progress-fill" id="img-progress-fill"></div></div>
-      <div class="image-grid" id="image-grid"></div>
-      <div id="images-status"></div>
-    </div>
+      <!-- Step 3: Generate Prompts -->
+      <div class="panel" id="panel-3">
+        <div class="panel-title">🎬 Scene Breakdown & Image Prompts</div>
+        <div class="panel-desc">Generate and review image prompts for each scene</div>
 
-    <!-- Step 5: Build Video -->
-    <div class="panel" id="panel-5">
-      <div class="panel-title">🎥 Build Video in DaVinci Resolve</div>
-      <div class="panel-desc">Assemble the timeline with images and audio</div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="btn btn-success btn-lg" id="build-btn" onclick="buildVideo()">Build Timeline XML</button>
-        <button class="btn btn-primary btn-lg" id="resolve-btn" onclick="openInResolve()" style="display:none">Open in DaVinci Resolve</button>
+        <div style="margin-bottom:20px;">
+          <label for="creative-direction" style="font-weight:500; font-size:.95rem; display:block; margin-bottom:8px;">✏️ Creative Direction <span style="color:var(--text2); font-weight:400; font-size:.8rem;">(optional)</span></label>
+          <textarea id="creative-direction" class="script-input" style="height:100px;" placeholder="Describe the subject or add context for better prompts. Example: 'Quetzalcoatlus is a giant pterosaur with a 35-foot wingspan, long sharp beak, and no feathers — NOT a bird. It looks like a massive flying reptile.'" onchange="saveSettings()"></textarea>
+        </div>
+
+        <button class="btn btn-primary btn-lg" id="gen-prompts-btn" onclick="generatePrompts()">Generate Image
+          Prompts</button>
+        <div id="prompts-status"></div>
+        <div id="scenes-table-wrap" style="display:none">
+          <table class="scene-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Script Text</th>
+                <th>Image Prompt (editable)</th>
+              </tr>
+            </thead>
+            <tbody id="scenes-tbody"></tbody>
+          </table>
+          <div style="margin-top:16px;display:flex;gap:10px">
+            <button class="btn btn-success btn-lg" onclick="saveScenes()">Save & Continue →</button>
+          </div>
+        </div>
       </div>
-      <div id="build-status"></div>
+
+      <!-- Step 4: Generate Images -->
+      <div class="panel" id="panel-4">
+        <div class="panel-title">🖼️ Generate Images</div>
+        <div class="panel-desc">Images will be generated via Google Flow (Edge must be closed first!)</div>
+        <button class="btn btn-primary btn-lg" id="gen-images-btn" onclick="generateImages()">Generate Images</button>
+        <div class="progress-text" id="img-progress-text" style="display:none"></div>
+        <div class="progress-bar" id="img-progress-bar" style="display:none">
+          <div class="progress-fill" id="img-progress-fill"></div>
+        </div>
+        <div class="image-grid" id="image-grid"></div>
+        <div id="images-status"></div>
+      </div>
+
+      <!-- Step 5: Build Video -->
+      <div class="panel" id="panel-5">
+        <div class="panel-title">🎥 Build Video in DaVinci Resolve</div>
+        <div class="panel-desc">Assemble the timeline with images and audio</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-success btn-lg" id="build-btn" onclick="buildVideo()">Build Timeline XML</button>
+          <button class="btn btn-primary btn-lg" id="resolve-btn" onclick="openInResolve()" style="display:none">Open in
+            DaVinci Resolve</button>
+        </div>
+        <div id="build-status"></div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- New Project Modal -->
-<div class="modal-overlay" id="new-modal">
-  <div class="modal">
-    <h2>New Project</h2>
-    <input type="text" id="new-name" placeholder="Project name..." autofocus>
-    <div class="actions">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="createProject()">Create</button>
+  <!-- New Project Modal -->
+  <div class="modal-overlay" id="new-modal">
+    <div class="modal">
+      <h2>New Project</h2>
+      <input type="text" id="new-name" placeholder="Project name..." autofocus>
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createProject()">Create</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-const API = '/api/projects';
-let currentProject = null;
-let currentStep = 1;
-let scenes = [];
+  <script>
+    const API = '/api/projects';
+    let currentProject = null;
+    let currentStep = 1;
+    let scenes = [];
 
-// ── Home ──
-async function loadProjects() {
-  const res = await fetch(API);
-  const projects = await res.json();
-  const grid = document.getElementById('project-grid');
-  const labels = ['','Script','Audio','Prompts','Images','Complete'];
-  grid.innerHTML = `<div class="project-card new-project-card" onclick="openModal()"><div class="plus">+</div><div>New Project</div></div>`;
-  projects.forEach(p => {
-    const bc = `badge-${Math.min(p.step,5)}`;
-    grid.innerHTML += `<div class="project-card" onclick="openProject('${p.name}')"><h3>${p.name.replace(/_/g,' ')}</h3><div class="meta">Created ${p.created}</div><span class="badge ${bc}">${labels[p.step] || 'New'}</span></div>`;
-  });
-}
-
-function showHome() {
-  document.getElementById('home-view').style.display = '';
-  document.getElementById('project-view').style.display = 'none';
-  currentProject = null;
-  loadProjects();
-}
-
-// ── Modal ──
-function openModal() { document.getElementById('new-modal').classList.add('active'); document.getElementById('new-name').focus(); }
-function closeModal() { document.getElementById('new-modal').classList.remove('active'); }
-async function createProject() {
-  const name = document.getElementById('new-name').value.trim();
-  if (!name) return;
-  await fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name})});
-  document.getElementById('new-name').value = '';
-  closeModal();
-  openProject(name.replace(/ /g,'_'));
-}
-
-// ── Project View ──
-async function openProject(name) {
-  currentProject = name;
-  document.getElementById('home-view').style.display = 'none';
-  document.getElementById('project-view').style.display = '';
-  document.getElementById('proj-title').textContent = name.replace(/_/g,' ');
-
-  const res = await fetch(`${API}/${name}`);
-  const status = await res.json();
-  currentStep = status.step + 1;
-  if (currentStep > 5) currentStep = 5;
-  if (currentStep < 1) currentStep = 1;
-
-  renderStepper();
-  showPanel(currentStep);
-
-  // Load existing data
-  if (status.has_script) {
-    // We don't have a GET script endpoint, that's fine
-  }
-  if (status.has_scenes) loadScenes();
-  if (status.image_count > 0) loadImages(status.image_count);
-
-  // Load settings (character toggle, style)
-  loadSettings();
-}
-
-function renderStepper() {
-  const names = ['Script','Audio','Prompts','Images','Build'];
-  const s = document.getElementById('stepper');
-  s.innerHTML = '';
-  names.forEach((n,i) => {
-    const num = i+1;
-    let cls = 'step';
-    if (num === currentStep) cls += ' active';
-    else if (num < currentStep) cls += ' done';
-    if (i > 0) s.innerHTML += `<span class="step-arrow">›</span>`;
-    s.innerHTML += `<div class="${cls}" onclick="showPanel(${num})"><span class="step-num">${num}</span>${n}</div>`;
-  });
-}
-
-function showPanel(n) {
-  currentStep = n;
-  renderStepper();
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  const el = document.getElementById(`panel-${n}`);
-  if (el) el.classList.add('active');
-}
-
-function statusMsg(id, msg, type) {
-  document.getElementById(id).innerHTML = `<div class="status-msg ${type}">${msg}</div>`;
-}
-
-// ── Step 1: Script ──
-async function saveScript() {
-  const script = document.getElementById('script-input').value.trim();
-  if (!script) return statusMsg('script-status','Script is empty!','err');
-  statusMsg('script-status','<span class="spinner"></span>Saving...','loading');
-  const res = await fetch(`${API}/${currentProject}/script`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({script})});
-  const data = await res.json();
-  if (data.success) { statusMsg('script-status','Script saved! ✓','ok'); setTimeout(()=>showPanel(2),800); }
-  else statusMsg('script-status',data.error,'err');
-}
-
-// ── Step 2: Audio ──
-async function loadVoices() {
-  const res = await fetch('/api/voices');
-  const voices = await res.json();
-  const select = document.getElementById('voice-select');
-  select.innerHTML = voices.length ? voices.map(v => `<option value="${v.id}">${v.name}</option>`).join('') : '<option value="">No voices found in ominivoice folder</option>';
-}
-loadVoices();
-
-async function generateAudio() {
-  const voice = document.getElementById('voice-select').value;
-  if (!voice) return statusMsg('audio-status','Select a voice first','err');
-  
-  document.getElementById('gen-audio-btn').disabled = true;
-  document.getElementById('audio-progress-bar').style.display = '';
-  document.getElementById('audio-progress-text').style.display = '';
-  statusMsg('audio-status','<span class="spinner"></span>Starting voice generation...','loading');
-
-  const res = await fetch(`${API}/${currentProject}/generate-audio`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ voice })
-  });
-  
-  const data = await res.json();
-  if (data.error) {
-    document.getElementById('gen-audio-btn').disabled = false;
-    return statusMsg('audio-status', data.error, 'err');
-  }
-
-  const es = new EventSource(`${API}/${currentProject}/audio-progress`);
-  es.onmessage = e => {
-    const d = JSON.parse(e.data);
-    if (d.done) {
-      es.close();
-      document.getElementById('gen-audio-btn').disabled = false;
-      document.getElementById('audio-progress-fill').style.width = '100%';
-      document.getElementById('audio-progress-text').textContent = 'Done';
-      document.getElementById('audio-name').textContent = d.filename;
-      document.getElementById('audio-info').classList.add('visible');
-      statusMsg('audio-status','Audio generated! ✓','ok');
-      setTimeout(()=>showPanel(3),800);
-      return;
+    // ── Home ──
+    async function loadProjects() {
+      const res = await fetch(API);
+      const projects = await res.json();
+      const grid = document.getElementById('project-grid');
+      const labels = ['', 'Script', 'Audio', 'Prompts', 'Images', 'Complete'];
+      grid.innerHTML = `<div class="project-card new-project-card" onclick="openModal()"><div class="plus">+</div><div>New Project</div></div>`;
+      projects.forEach(p => {
+        const bc = `badge-${Math.min(p.step, 5)}`;
+        grid.innerHTML += `<div class="project-card" onclick="openProject('${p.name}')"><h3>${p.name.replace(/_/g, ' ')}</h3><div class="meta">Created ${p.created}</div><span class="badge ${bc}">${labels[p.step] || 'New'}</span></div>`;
+      });
     }
-    if (d.error) {
-      es.close();
-      document.getElementById('gen-audio-btn').disabled = false;
-      statusMsg('audio-status', `❌ ${d.error}`, 'err');
-      return;
+
+    function showHome() {
+      document.getElementById('home-view').style.display = '';
+      document.getElementById('project-view').style.display = 'none';
+      currentProject = null;
+      loadProjects();
     }
-    if (d.status) {
-      const pct = Math.round(d.progress * 100);
-      document.getElementById('audio-progress-fill').style.width = pct + '%';
-      document.getElementById('audio-progress-text').textContent = d.status;
+
+    // ── Modal ──
+    function openModal() { document.getElementById('new-modal').classList.add('active'); document.getElementById('new-name').focus(); }
+    function closeModal() { document.getElementById('new-modal').classList.remove('active'); }
+    async function createProject() {
+      const name = document.getElementById('new-name').value.trim();
+      if (!name) return;
+      await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      document.getElementById('new-name').value = '';
+      closeModal();
+      openProject(name.replace(/ /g, '_'));
     }
-  };
-}
 
-const uploadZone = document.getElementById('upload-zone');
-const audioFile = document.getElementById('audio-file');
+    // ── Project View ──
+    async function openProject(name) {
+      currentProject = name;
+      document.getElementById('home-view').style.display = 'none';
+      document.getElementById('project-view').style.display = '';
+      document.getElementById('proj-title').textContent = name.replace(/_/g, ' ');
 
-uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
-uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); if(e.dataTransfer.files.length) uploadAudio(e.dataTransfer.files[0]); });
-audioFile.addEventListener('change', () => { if(audioFile.files.length) uploadAudio(audioFile.files[0]); });
+      const res = await fetch(`${API}/${name}`);
+      const status = await res.json();
+      currentStep = status.step + 1;
+      if (currentStep > 5) currentStep = 5;
+      if (currentStep < 1) currentStep = 1;
 
-async function uploadAudio(file) {
-  statusMsg('audio-status','<span class="spinner"></span>Uploading...','loading');
-  const fd = new FormData();
-  fd.append('audio', file);
-  const res = await fetch(`${API}/${currentProject}/audio`,{method:'POST',body:fd});
-  const data = await res.json();
-  if (data.success) {
-    document.getElementById('audio-name').textContent = data.filename;
-    document.getElementById('audio-info').classList.add('visible');
-    statusMsg('audio-status','Audio uploaded! ✓','ok');
-    setTimeout(()=>showPanel(3),800);
-  } else statusMsg('audio-status',data.error,'err');
-}
+      renderStepper();
+      showPanel(currentStep);
 
-async function saveSettings() {
-  const useChar = document.getElementById('use-character').checked;
-  const style = document.getElementById('style-select').value;
-  await fetch(`${API}/${currentProject}/settings`, {
-    method: 'PUT', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({use_character: useChar, style: style})
-  });
-}
+      // Load existing data
+      if (status.has_script) {
+        // We don't have a GET script endpoint, that's fine
+      }
+      if (status.has_scenes) loadScenes();
+      if (status.image_count > 0) loadImages(status.image_count);
+      
+      if (status.has_timeline) {
+        document.getElementById('resolve-btn').style.display = '';
+      } else {
+        document.getElementById('resolve-btn').style.display = 'none';
+      }
 
-// Alias for the toggle onchange
-const saveCharacterSetting = saveSettings;
-
-async function loadSettings() {
-  const res = await fetch(`${API}/${currentProject}/settings`);
-  if (res.ok) {
-    const s = await res.json();
-    document.getElementById('use-character').checked = s.use_character || false;
-    document.getElementById('style-select').value = s.style || 'cinematic';
-  }
-}
-
-// ── Step 3: Prompts ──
-async function generatePrompts() {
-  statusMsg('prompts-status','<span class="spinner"></span>Generating prompts with Gemini 2.5 Flash...','loading');
-  document.getElementById('gen-prompts-btn').disabled = true;
-  const res = await fetch(`${API}/${currentProject}/generate-prompts`,{method:'POST'});
-  const data = await res.json();
-  document.getElementById('gen-prompts-btn').disabled = false;
-  if (data.error) return statusMsg('prompts-status',data.error,'err');
-  scenes = data.scenes;
-  renderScenes();
-  statusMsg('prompts-status','Prompts generated! Review and edit below. ✓','ok');
-}
-
-async function loadScenes() {
-  const res = await fetch(`${API}/${currentProject}/scenes`);
-  if (res.ok) { scenes = await res.json(); renderScenes(); }
-}
-
-function renderScenes() {
-  const tbody = document.getElementById('scenes-tbody');
-  tbody.innerHTML = '';
-  scenes.forEach((s,i) => {
-    tbody.innerHTML += `<tr><td>${s.scene_id}</td><td>${s.script_text}</td><td><textarea id="prompt-${i}">${s.image_prompt}</textarea></td></tr>`;
-  });
-  document.getElementById('scenes-table-wrap').style.display = '';
-}
-
-async function saveScenes() {
-  scenes.forEach((s,i) => { s.image_prompt = document.getElementById(`prompt-${i}`).value; });
-  const res = await fetch(`${API}/${currentProject}/scenes`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({scenes})});
-  const data = await res.json();
-  if (data.success) { statusMsg('prompts-status','Scenes saved! ✓','ok'); setTimeout(()=>showPanel(4),800); }
-}
-
-// ── Step 4: Images ──
-async function generateImages() {
-  document.getElementById('gen-images-btn').disabled = true;
-  document.getElementById('img-progress-bar').style.display = '';
-  document.getElementById('img-progress-text').style.display = '';
-  statusMsg('images-status','<span class="spinner"></span>Starting image generation... Close Edge first!','loading');
-
-  await fetch(`${API}/${currentProject}/generate-images`,{method:'POST'});
-
-  const es = new EventSource(`${API}/${currentProject}/progress`);
-  es.onmessage = e => {
-    const d = JSON.parse(e.data);
-    if (d.done) {
-      es.close();
-      document.getElementById('gen-images-btn').disabled = false;
-      statusMsg('images-status','All images generated! ✓','ok');
-      loadImages(scenes.length);
-      return;
+      // Load settings (character toggle, style)
+      loadSettings();
     }
-    if (d.idx) {
-      const pct = Math.round((d.idx / d.total) * 100);
-      document.getElementById('img-progress-fill').style.width = pct + '%';
-      document.getElementById('img-progress-text').textContent = `Scene ${d.idx}/${d.total}${d.skipped?' (skipped)':''}${d.error?' ❌ '+d.error:''}`;
-      if (!d.error && !d.skipped) addImageThumb(d.filename);
+
+    function renderStepper() {
+      const names = ['Script', 'Audio', 'Prompts', 'Images', 'Build'];
+      const s = document.getElementById('stepper');
+      s.innerHTML = '';
+      names.forEach((n, i) => {
+        const num = i + 1;
+        let cls = 'step';
+        if (num === currentStep) cls += ' active';
+        else if (num < currentStep) cls += ' done';
+        if (i > 0) s.innerHTML += `<span class="step-arrow">›</span>`;
+        s.innerHTML += `<div class="${cls}" onclick="showPanel(${num})"><span class="step-num">${num}</span>${n}</div>`;
+      });
     }
-  };
-}
 
-function loadImages(count) {
-  const grid = document.getElementById('image-grid');
-  grid.innerHTML = '';
-  for (let i = 1; i <= count; i++) {
-    let temp_idx = i - 1;
-    let c3 = String.fromCharCode(97 + (temp_idx % 26));
-    temp_idx = Math.floor(temp_idx / 26);
-    let c2 = String.fromCharCode(97 + (temp_idx % 26));
-    temp_idx = Math.floor(temp_idx / 26);
-    let c1 = String.fromCharCode(97 + (temp_idx % 26));
-    const fn = `img_${c1}${c2}${c3}.jpg`;
-    addImageThumb(fn);
-  }
-}
+    function showPanel(n) {
+      currentStep = n;
+      renderStepper();
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      const el = document.getElementById(`panel-${n}`);
+      if (el) el.classList.add('active');
+    }
 
-function addImageThumb(filename) {
-  const grid = document.getElementById('image-grid');
-  // Avoid duplicates
-  if (grid.querySelector(`[data-file="${filename}"]`)) return;
-  grid.innerHTML += `<div class="image-thumb" data-file="${filename}"><img src="/api/projects/${currentProject}/images/${filename}" onerror="this.style.display='none'"><div class="label">${filename}</div></div>`;
-}
+    function statusMsg(id, msg, type) {
+      document.getElementById(id).innerHTML = `<div class="status-msg ${type}">${msg}</div>`;
+    }
 
-// ── Step 5: Build ──
-async function buildVideo() {
-  document.getElementById('build-btn').disabled = true;
-  statusMsg('build-status','<span class="spinner"></span>Extracting timing with Whisper & building timeline XML...','loading');
-  const res = await fetch(`${API}/${currentProject}/build-video`,{method:'POST'});
-  const data = await res.json();
-  document.getElementById('build-btn').disabled = false;
-  if (data.success) {
-    document.getElementById('resolve-btn').style.display = '';
-    statusMsg('build-status', 'Timeline XML ready! Click "Open in DaVinci Resolve" to import.', 'ok');
-  } else statusMsg('build-status', data.error || 'Build failed','err');
-}
+    // ── Step 1: Script ──
+    async function saveScript() {
+      const script = document.getElementById('script-input').value.trim();
+      if (!script) return statusMsg('script-status', 'Script is empty!', 'err');
+      statusMsg('script-status', '<span class="spinner"></span>Saving...', 'loading');
+      const res = await fetch(`${API}/${currentProject}/script`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ script }) });
+      const data = await res.json();
+      if (data.success) { statusMsg('script-status', 'Script saved! ✓', 'ok'); setTimeout(() => showPanel(2), 800); }
+      else statusMsg('script-status', data.error, 'err');
+    }
 
-async function openInResolve() {
-  document.getElementById('resolve-btn').disabled = true;
-  statusMsg('build-status','<span class="spinner"></span>Launching DaVinci Resolve & importing timeline...','loading');
-  const res = await fetch(`${API}/${currentProject}/open-in-resolve`,{method:'POST'});
-  const data = await res.json();
-  document.getElementById('resolve-btn').disabled = false;
-  if (data.success) {
-    statusMsg('build-status', `Timeline imported into project "${data.project}" in DaVinci Resolve!`, 'ok');
-  } else {
-    statusMsg('build-status', data.error || 'Import failed. You can manually import: File > Import > Timeline', 'err');
-  }
-}
+    // ── Step 2: Audio ──
+    async function loadVoices() {
+      const res = await fetch('/api/voices');
+      const voices = await res.json();
+      const select = document.getElementById('voice-select');
+      select.innerHTML = voices.length ? voices.map(v => `<option value="${v.id}">${v.name}</option>`).join('') : '<option value="">No voices found in ominivoice folder</option>';
+    }
+    loadVoices();
 
-// ── Init ──
-loadProjects();
+    async function generateAudio() {
+      const voice = document.getElementById('voice-select').value;
+      if (!voice) return statusMsg('audio-status', 'Select a voice first', 'err');
 
-// Enter key in modal
-document.getElementById('new-name').addEventListener('keydown', e => { if(e.key==='Enter') createProject(); });
-</script>
+      document.getElementById('gen-audio-btn').disabled = true;
+      document.getElementById('audio-progress-bar').style.display = '';
+      document.getElementById('audio-progress-text').style.display = '';
+      statusMsg('audio-status', '<span class="spinner"></span>Starting voice generation...', 'loading');
+
+      const res = await fetch(`${API}/${currentProject}/generate-audio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice })
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        document.getElementById('gen-audio-btn').disabled = false;
+        return statusMsg('audio-status', data.error, 'err');
+      }
+
+      const es = new EventSource(`${API}/${currentProject}/audio-progress`);
+      es.onmessage = e => {
+        const d = JSON.parse(e.data);
+        if (d.done) {
+          es.close();
+          document.getElementById('gen-audio-btn').disabled = false;
+          document.getElementById('audio-progress-fill').style.width = '100%';
+          document.getElementById('audio-progress-text').textContent = 'Done';
+          document.getElementById('audio-name').textContent = d.filename;
+          document.getElementById('audio-info').classList.add('visible');
+          statusMsg('audio-status', 'Audio generated! ✓', 'ok');
+          setTimeout(() => showPanel(3), 800);
+          return;
+        }
+        if (d.error) {
+          es.close();
+          document.getElementById('gen-audio-btn').disabled = false;
+          statusMsg('audio-status', `❌ ${d.error}`, 'err');
+          return;
+        }
+        if (d.status) {
+          const pct = Math.round(d.progress * 100);
+          document.getElementById('audio-progress-fill').style.width = pct + '%';
+          document.getElementById('audio-progress-text').textContent = d.status;
+        }
+      };
+    }
+
+    const uploadZone = document.getElementById('upload-zone');
+    const audioFile = document.getElementById('audio-file');
+
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); if (e.dataTransfer.files.length) uploadAudio(e.dataTransfer.files[0]); });
+    audioFile.addEventListener('change', () => { if (audioFile.files.length) uploadAudio(audioFile.files[0]); });
+
+    async function uploadAudio(file) {
+      statusMsg('audio-status', '<span class="spinner"></span>Uploading...', 'loading');
+      const fd = new FormData();
+      fd.append('audio', file);
+      const res = await fetch(`${API}/${currentProject}/audio`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('audio-name').textContent = data.filename;
+        document.getElementById('audio-info').classList.add('visible');
+        statusMsg('audio-status', 'Audio uploaded! ✓', 'ok');
+        setTimeout(() => showPanel(3), 800);
+      } else statusMsg('audio-status', data.error, 'err');
+    }
+
+    async function saveSettings() {
+      const useChar = document.getElementById('use-character').checked;
+      const style = document.getElementById('style-select').value;
+      const duration = parseInt(document.getElementById('duration-slider').value) || 5;
+      const direction = document.getElementById('creative-direction').value.trim();
+      await fetch(`${API}/${currentProject}/settings`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ use_character: useChar, style: style, scene_duration: duration, creative_direction: direction })
+      });
+    }
+
+    // Alias for the toggle onchange
+    const saveCharacterSetting = saveSettings;
+
+    async function loadSettings() {
+      const res = await fetch(`${API}/${currentProject}/settings`);
+      if (res.ok) {
+        const s = await res.json();
+        document.getElementById('use-character').checked = s.use_character || false;
+        document.getElementById('style-select').value = s.style || 'cinematic';
+        document.getElementById('creative-direction').value = s.creative_direction || '';
+        const duration = s.scene_duration || 5;
+        document.getElementById('duration-slider').value = duration;
+        document.getElementById('duration-val').textContent = duration + 's';
+      }
+    }
+
+    // ── Step 3: Prompts ──
+    async function generatePrompts() {
+      statusMsg('prompts-status', '<span class="spinner"></span>Generating prompts with Gemini 3.1 Flash lite...', 'loading');
+      document.getElementById('gen-prompts-btn').disabled = true;
+      const res = await fetch(`${API}/${currentProject}/generate-prompts`, { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('gen-prompts-btn').disabled = false;
+      if (data.error) return statusMsg('prompts-status', data.error, 'err');
+      scenes = data.scenes;
+      renderScenes();
+      statusMsg('prompts-status', 'Prompts generated! Review and edit below. ✓', 'ok');
+    }
+
+    async function loadScenes() {
+      const res = await fetch(`${API}/${currentProject}/scenes`);
+      if (res.ok) { scenes = await res.json(); renderScenes(); }
+    }
+
+    function renderScenes() {
+      const tbody = document.getElementById('scenes-tbody');
+      tbody.innerHTML = '';
+      scenes.forEach((s, i) => {
+        tbody.innerHTML += `<tr><td>${s.scene_id}</td><td>${s.script_text}</td><td><textarea id="prompt-${i}">${s.image_prompt}</textarea></td></tr>`;
+      });
+      document.getElementById('scenes-table-wrap').style.display = '';
+    }
+
+    async function saveScenes() {
+      scenes.forEach((s, i) => { s.image_prompt = document.getElementById(`prompt-${i}`).value; });
+      const res = await fetch(`${API}/${currentProject}/scenes`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scenes }) });
+      const data = await res.json();
+      if (data.success) { statusMsg('prompts-status', 'Scenes saved! ✓', 'ok'); setTimeout(() => showPanel(4), 800); }
+    }
+
+    // ── Step 4: Images ──
+    async function generateImages() {
+      document.getElementById('gen-images-btn').disabled = true;
+      document.getElementById('img-progress-bar').style.display = '';
+      document.getElementById('img-progress-text').style.display = '';
+      statusMsg('images-status', '<span class="spinner"></span>Starting image generation... Close Edge first!', 'loading');
+
+      await fetch(`${API}/${currentProject}/generate-images`, { method: 'POST' });
+
+      const es = new EventSource(`${API}/${currentProject}/progress`);
+      es.onmessage = e => {
+        const d = JSON.parse(e.data);
+        if (d.done) {
+          es.close();
+          document.getElementById('gen-images-btn').disabled = false;
+          statusMsg('images-status', 'All images generated! ✓', 'ok');
+          loadImages(scenes.length);
+          return;
+        }
+        if (d.idx) {
+          const pct = Math.round((d.idx / d.total) * 100);
+          document.getElementById('img-progress-fill').style.width = pct + '%';
+          document.getElementById('img-progress-text').textContent = `Scene ${d.idx}/${d.total}${d.skipped ? ' (skipped)' : ''}${d.error ? ' ❌ ' + d.error : ''}`;
+          if (!d.error && !d.skipped) addImageThumb(d.filename);
+        }
+      };
+    }
+
+    function loadImages(count) {
+      const grid = document.getElementById('image-grid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= count; i++) {
+        let temp_idx = i - 1;
+        let c3 = String.fromCharCode(97 + (temp_idx % 26));
+        temp_idx = Math.floor(temp_idx / 26);
+        let c2 = String.fromCharCode(97 + (temp_idx % 26));
+        temp_idx = Math.floor(temp_idx / 26);
+        let c1 = String.fromCharCode(97 + (temp_idx % 26));
+        const fn = `img_${c1}${c2}${c3}.jpg`;
+        addImageThumb(fn);
+      }
+    }
+
+    function addImageThumb(filename) {
+      const grid = document.getElementById('image-grid');
+      // Avoid duplicates
+      if (grid.querySelector(`[data-file="${filename}"]`)) return;
+      grid.innerHTML += `<div class="image-thumb" data-file="${filename}"><img src="/api/projects/${currentProject}/images/${filename}" onerror="this.style.display='none'"><div class="label">${filename}</div></div>`;
+    }
+
+    // ── Step 5: Build ──
+    async function buildVideo() {
+      document.getElementById('build-btn').disabled = true;
+      statusMsg('build-status', '<span class="spinner"></span>Extracting timing with Whisper & building timeline XML...', 'loading');
+      const res = await fetch(`${API}/${currentProject}/build-video`, { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('build-btn').disabled = false;
+      if (data.success) {
+        document.getElementById('resolve-btn').style.display = '';
+        statusMsg('build-status', 'Timeline XML ready! Click "Open in DaVinci Resolve" to import.', 'ok');
+      } else statusMsg('build-status', data.error || 'Build failed', 'err');
+    }
+
+    async function openInResolve() {
+      document.getElementById('resolve-btn').disabled = true;
+      statusMsg('build-status', '<span class="spinner"></span>Launching DaVinci Resolve & importing timeline...', 'loading');
+      const res = await fetch(`${API}/${currentProject}/open-in-resolve`, { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('resolve-btn').disabled = false;
+      if (data.success) {
+        statusMsg('build-status', `Timeline imported into project "${data.project}" in DaVinci Resolve!`, 'ok');
+      } else {
+        statusMsg('build-status', data.error || 'Import failed. You can manually import: File > Import > Timeline', 'err');
+      }
+    }
+
+    // ── Init ──
+    loadProjects();
+
+    // Enter key in modal
+    document.getElementById('new-name').addEventListener('keydown', e => { if (e.key === 'Enter') createProject(); });
+  </script>
 </body>
+
 </html>

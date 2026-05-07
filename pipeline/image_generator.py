@@ -3,8 +3,8 @@ import os
 import time
 from playwright.async_api import async_playwright
 
-FLOW_URL = "https://labs.google/fx/tools/flow/project/14e9af57-4fc5-465a-8c9b-72f24440bbc3"
-EDGE_USER_DATA = r"C:\Users\akhil\AppData\Local\Microsoft\Edge\User Data"
+FLOW_URL = "https://labs.google/fx/tools/flow/project/a876a7bb-9599-4e94-b4df-0a0e43fa483f"
+EDGE_USER_DATA = r"C:\Users\akkzz\AppData\Local\Microsoft\Edge\User Data"
 
 PROMPT_SELECTOR = 'div[role="textbox"][data-slate-editor="true"]'
 GENERATE_BTN_SELECTOR = 'button:has(i.google-symbols:text-is("arrow_forward"))'

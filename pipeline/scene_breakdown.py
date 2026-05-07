@@ -14,9 +14,9 @@ STYLE_PRESETS = {
 }
 
 
-def generate_scenes(script_text: str, use_character: bool = False, style: str = "cinematic") -> list[dict]:
+def generate_scenes(script_text: str, use_character: bool = False, style: str = "cinematic", target_duration: int = 5, creative_direction: str = "") -> list[dict]:
     """
-    Uses Gemini 2.5 Flash to break a script into scenes with image prompts.
+    Uses Gemini 3.1 Flash lite to break a script into scenes with image prompts.
     Splits long sentences so no scene exceeds ~7 seconds of narration.
     If use_character is True, prompts will reference a consistent character.
     style: key from STYLE_PRESETS for consistent visual style.
@@ -48,20 +48,40 @@ def generate_scenes(script_text: str, use_character: bool = False, style: str = 
     - CRITICAL: Avoid plain white or solid-color empty backgrounds. ALWAYS describe a fully realized environment or detailed background elements.
     """
 
+    word_count = len(script_text.split())
+    estimated_audio_length = word_count / 2.75  # ~2.75 words per second
+    target_scenes = max(1, round(estimated_audio_length / target_duration))
+
+    creative_dir_block = ""
+    if creative_direction:
+        creative_dir_block = f"""
+    CREATIVE DIRECTION FROM THE USER:
+    {creative_direction}
+    Use this information to make image prompts accurate. Apply this context to EVERY image prompt.
+    """
+
     system_prompt = f"""You are a video production assistant. 
     Break the given script into individual scenes for a video.
     
-    CRITICAL RULE FOR SCENE LENGTH:
-    - Each scene should be 1-2 sentences, roughly 12-18 words of narration.
-    - At ~3 words/second, each scene should last approximately 4-6 seconds when spoken.
-    - Do NOT create scenes longer than ~20 words. Split them if needed.
-    - Do NOT create scenes shorter than ~8 words unless it's a very short impactful line.
+    ABSOLUTE RULE — PRESERVE EVERY WORD:
+    - You MUST use EVERY SINGLE WORD from the original script. No word may be skipped, removed, summarized, or paraphrased.
+    - When you concatenate all scene "script_text" fields in order, the result MUST be the EXACT original script, word for word.
+    - If you drop even one word, the audio and images will go out of sync and the video will be ruined.
+    
+    CRITICAL RULE FOR SCENE LENGTH (PACING):
+    - The script has {word_count} words and will take approximately {int(estimated_audio_length)} seconds to read.
+    - The user requested an image every {target_duration} seconds.
+    - Therefore, YOU MUST BREAK THIS SCRIPT INTO APPROXIMATELY {target_scenes} SCENES.
+    - To reach {target_scenes} scenes, you MUST break single sentences into multiple shorter fragments. 
+    - Example: "When they spotted you," (Scene 1) "they could jump 8 feet high" (Scene 2) "just taking off from the ground." (Scene 3).
+    - Do NOT be afraid to make scenes 3-5 words long. Split aggressively to hit the target, but NEVER drop any words.
     
     TEXT IN IMAGES:
     - CRITICAL: Do NOT request long sentences, paragraphs, or banners of text in the generated images.
     - Rely on visual storytelling rather than written text. If you must include text, keep it to 1-2 very small words max (e.g., a sign that says "BANK").
 
     {character_instruction}
+    {creative_dir_block}
     
     For each scene, create a detailed, vivid image prompt suitable for an AI image generator.
     The image prompt should describe a stunning visual that matches the script text.
@@ -83,7 +103,7 @@ def generate_scenes(script_text: str, use_character: bool = False, style: str = 
     """
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.1-flash-lite-preview",
         contents=f"{system_prompt}\n\nScript:\n{script_text}"
     )
 
