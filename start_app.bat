@@ -9,7 +9,7 @@ call .\venv\Scripts\activate
 
 :: Open the app in the default browser (Chrome)
 echo Opening Browser...
-start http://127.0.0.1:5858
+start http://127.0.0.1:9850
 
 :: Start the Python Flask server
 echo Starting Server...

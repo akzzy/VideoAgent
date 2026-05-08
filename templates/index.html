@@ -776,6 +776,17 @@
             <span id="duration-val" style="font-weight:600; min-width:30px; text-align:right;">5s</span>
           </div>
         </div>
+
+        <div class="style-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Prompt Model</div>
+            <div class="toggle-desc">LLM used to generate scene breakdowns and image prompts</div>
+          </div>
+          <select class="style-select" id="llm-select" onchange="saveSettings()">
+            <option value="gemini">Gemini 3.1 Flash Lite</option>
+            <option value="mistral">Mistral Small 4</option>
+          </select>
+        </div>
       </div>
 
       <!-- Step 3: Generate Prompts -->
@@ -1040,9 +1051,10 @@
       const style = document.getElementById('style-select').value;
       const duration = parseInt(document.getElementById('duration-slider').value) || 5;
       const direction = document.getElementById('creative-direction').value.trim();
+      const llmProvider = document.getElementById('llm-select').value;
       await fetch(`${API}/${currentProject}/settings`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ use_character: useChar, style: style, scene_duration: duration, creative_direction: direction })
+        body: JSON.stringify({ use_character: useChar, style: style, scene_duration: duration, creative_direction: direction, llm_provider: llmProvider })
       });
     }
 
@@ -1056,6 +1068,7 @@
         document.getElementById('use-character').checked = s.use_character || false;
         document.getElementById('style-select').value = s.style || 'cinematic';
         document.getElementById('creative-direction').value = s.creative_direction || '';
+        document.getElementById('llm-select').value = s.llm_provider || 'gemini';
         const duration = s.scene_duration || 5;
         document.getElementById('duration-slider').value = duration;
         document.getElementById('duration-val').textContent = duration + 's';
@@ -1064,7 +1077,8 @@
 
     // ── Step 3: Prompts ──
     async function generatePrompts() {
-      statusMsg('prompts-status', '<span class="spinner"></span>Generating prompts with Gemini 3.1 Flash lite...', 'loading');
+      const modelName = document.getElementById('llm-select').selectedOptions[0].text;
+      statusMsg('prompts-status', `<span class="spinner"></span>Generating prompts with ${modelName}...`, 'loading');
       document.getElementById('gen-prompts-btn').disabled = true;
       const res = await fetch(`${API}/${currentProject}/generate-prompts`, { method: 'POST' });
       const data = await res.json();

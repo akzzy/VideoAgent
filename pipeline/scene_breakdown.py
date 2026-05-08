@@ -1,6 +1,7 @@
 import os
 import json
 from google import genai
+from mistralai.client import Mistral
 
 STYLE_PRESETS = {
     "cinematic": "dark, dramatic, cinematic, photorealistic",
@@ -13,17 +14,21 @@ STYLE_PRESETS = {
     "oil_painting": "classical oil painting style, rich textures, dramatic chiaroscuro lighting",
 }
 
+# Supported LLM providers and their models
+LLM_MODELS = {
+    "gemini": "gemini-3.1-flash-lite-preview",
+    "mistral": "mistral-small-latest",
+}
 
-def generate_scenes(script_text: str, use_character: bool = False, style: str = "cinematic", target_duration: int = 5, creative_direction: str = "") -> list[dict]:
+
+def generate_scenes(script_text: str, use_character: bool = False, style: str = "cinematic",
+                     target_duration: int = 5, creative_direction: str = "",
+                     llm_provider: str = "gemini") -> list[dict]:
     """
-    Uses Gemini 3.1 Flash lite to break a script into scenes with image prompts.
-    Splits long sentences so no scene exceeds ~7 seconds of narration.
-    If use_character is True, prompts will reference a consistent character.
-    style: key from STYLE_PRESETS for consistent visual style.
+    Breaks a script into scenes with image prompts using the selected LLM provider.
+    Supported providers: 'gemini', 'mistral'.
     Returns a list of dicts: [{scene_id, script_text, image_prompt}]
     """
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
     style_desc = STYLE_PRESETS.get(style, STYLE_PRESETS["cinematic"])
 
     character_instruction = ""
@@ -72,6 +77,8 @@ def generate_scenes(script_text: str, use_character: bool = False, style: str = 
     - The script has {word_count} words and will take approximately {int(estimated_audio_length)} seconds to read.
     - The user requested an image every {target_duration} seconds.
     - Therefore, YOU MUST BREAK THIS SCRIPT INTO APPROXIMATELY {target_scenes} SCENES.
+    - Each scene should average {round(word_count / target_scenes)} words. HARD MAXIMUM: {max(5, round(word_count / target_scenes) + 4)} words per scene.
+    - CRITICAL: Keep scene lengths CONSISTENT from start to finish. Do NOT make short scenes at the beginning and long scenes at the end!
     - To reach {target_scenes} scenes, you MUST break single sentences into multiple shorter fragments. 
     - Example: "When they spotted you," (Scene 1) "they could jump 8 feet high" (Scene 2) "just taking off from the ground." (Scene 3).
     - Do NOT be afraid to make scenes 3-5 words long. Split aggressively to hit the target, but NEVER drop any words.
@@ -102,13 +109,17 @@ def generate_scenes(script_text: str, use_character: bool = False, style: str = 
     }}
     """
 
-    response = client.models.generate_content(
-        model="gemini-3.1-flash-lite-preview",
-        contents=f"{system_prompt}\n\nScript:\n{script_text}"
-    )
+    user_message = f"Script:\n{script_text}"
 
-    raw = response.text.strip()
+    print(f"[Prompts] Using LLM provider: {llm_provider}")
+
+    if llm_provider == "mistral":
+        raw = _call_mistral(system_prompt, user_message)
+    else:
+        raw = _call_gemini(system_prompt, user_message)
+
     # Strip markdown code fences if present
+    raw = raw.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
@@ -116,4 +127,43 @@ def generate_scenes(script_text: str, use_character: bool = False, style: str = 
     raw = raw.strip()
 
     data = json.loads(raw)
-    return data["scenes"]
+    scenes = data["scenes"]
+
+    # Normalize keys — some models return camelCase variants
+    normalized = []
+    for s in scenes:
+        normalized.append({
+            "scene_id": s.get("scene_id") or s.get("sceneId") or s.get("id"),
+            "script_text": s.get("script_text") or s.get("scriptText") or s.get("text", ""),
+            "image_prompt": s.get("image_prompt") or s.get("imagePrompt") or s.get("prompt", ""),
+        })
+    return normalized
+
+
+def _call_gemini(system_prompt: str, user_message: str) -> str:
+    """Call Gemini API and return raw text response."""
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    response = client.models.generate_content(
+        model=LLM_MODELS["gemini"],
+        contents=f"{system_prompt}\n\n{user_message}"
+    )
+    return response.text
+
+
+def _call_mistral(system_prompt: str, user_message: str) -> str:
+    """Call Mistral API and return raw text response."""
+    api_key = os.getenv("MISTRAL_API_KEY")
+    if not api_key:
+        raise ValueError("MISTRAL_API_KEY not set in .env file")
+
+    client = Mistral(api_key=api_key)
+    response = client.chat.complete(
+        model=LLM_MODELS["mistral"],
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ],
+    )
+    return response.choices[0].message.content
+

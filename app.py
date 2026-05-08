@@ -266,6 +266,7 @@ def generate_prompts(name):
     style = "cinematic"
     scene_duration = 5
     creative_direction = ""
+    llm_provider = "gemini"
     settings_path = os.path.join(p, "settings.json")
     if os.path.exists(settings_path):
         with open(settings_path, encoding="utf-8") as f:
@@ -274,11 +275,13 @@ def generate_prompts(name):
             style = settings.get("style", "cinematic")
             scene_duration = settings.get("scene_duration", 5)
             creative_direction = settings.get("creative_direction", "")
+            llm_provider = settings.get("llm_provider", "gemini")
 
     try:
         from pipeline.scene_breakdown import generate_scenes
         scenes = generate_scenes(script_text, use_character=use_character, style=style,
-                                 target_duration=scene_duration, creative_direction=creative_direction)
+                                 target_duration=scene_duration, creative_direction=creative_direction,
+                                 llm_provider=llm_provider)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -510,4 +513,4 @@ def open_in_resolve(name):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5858, debug=False, threaded=True)
+    app.run(host="0.0.0.0", port=9850, debug=False, threaded=True)
