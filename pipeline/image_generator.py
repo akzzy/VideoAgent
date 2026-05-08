@@ -2,6 +2,7 @@ import asyncio
 import os
 import time
 import json
+import random
 import httpx
 from playwright.async_api import async_playwright
 
@@ -161,7 +162,7 @@ async def generate_images(scenes: list[dict], output_dir: str,
             await page.click(PROMPT_SELECTOR)
             await page.keyboard.press("Control+A")
             await page.keyboard.press("Backspace")
-            await page.keyboard.type(prompt, delay=10)
+            await page.keyboard.type(prompt, delay=20)
             await page.wait_for_timeout(1000)
 
             # Attach character reference if needed
@@ -180,9 +181,12 @@ async def generate_images(scenes: list[dict], output_dir: str,
             await page.click(GENERATE_BTN_SELECTOR)
             print(f"[Typist] ✓ Fired scene {idx}")
 
-            # Wait before typing next prompt (skip wait on the last one)
+            # Wait before typing next prompt (randomized to look natural)
             if i < len(scenes_to_type) - 1:
-                wait_time = 10000 if use_character else 5000
+                base_wait = 20 if use_character else 15
+                jitter = random.uniform(-3, 5)
+                wait_time = int((base_wait + jitter) * 1000)
+                print(f"[Typist] Waiting {wait_time/1000:.1f}s before next prompt...")
                 await page.wait_for_timeout(wait_time)
 
         # ── Wait for all images to be downloaded by the Catcher ──
