@@ -132,12 +132,85 @@ def generate_scenes(script_text: str, use_character: bool = False, style: str = 
     # Normalize keys — some models return camelCase variants
     normalized = []
     for s in scenes:
+        prompt = s.get("image_prompt") or s.get("imagePrompt") or s.get("prompt", "")
+        script = s.get("script_text") or s.get("scriptText") or s.get("text", "")
         normalized.append({
             "scene_id": s.get("scene_id") or s.get("sceneId") or s.get("id"),
-            "script_text": s.get("script_text") or s.get("scriptText") or s.get("text", ""),
-            "image_prompt": s.get("image_prompt") or s.get("imagePrompt") or s.get("prompt", ""),
+            "script_text": script,
+            "image_prompt": prompt,
         })
+
+    # Retry: fill any empty prompts with targeted follow-up calls (up to 3 attempts)
+    for attempt in range(3):
+        empty_scenes = [s for s in normalized if not s["image_prompt"].strip()]
+        if not empty_scenes:
+            break
+        print(f"[Prompts] Attempt {attempt + 1}: {len(empty_scenes)} scene(s) have empty prompts, retrying...")
+        normalized = _fill_empty_prompts(normalized, empty_scenes, style_desc, creative_direction, llm_provider)
+
+    # If still empty after retries, raise error so user can regenerate
+    still_empty = [s["scene_id"] for s in normalized if not s["image_prompt"].strip()]
+    if still_empty:
+        raise ValueError(f"Failed to generate prompts for scene(s): {still_empty}. Please try regenerating.")
+
     return normalized
+
+
+def _fill_empty_prompts(scenes, empty_scenes, style_desc, creative_direction, llm_provider):
+    """Make a targeted API call to generate prompts for scenes that came back empty."""
+    scene_list = "\n".join(
+        f"- Scene {s['scene_id']}: \"{s['script_text']}\""
+        for s in empty_scenes
+    )
+
+    creative_block = ""
+    if creative_direction:
+        creative_block = f"\nContext: {creative_direction}"
+
+    fix_prompt = f"""Generate ONLY image prompts for these scenes. Each prompt must be a detailed, vivid description for an AI image generator.{creative_block}
+
+Scenes needing prompts:
+{scene_list}
+
+STYLE: Every prompt MUST end with: "{style_desc}"
+
+Respond ONLY with valid JSON:
+{{
+  "prompts": [
+    {{"scene_id": 1, "image_prompt": "detailed prompt here, {style_desc}"}}
+  ]
+}}"""
+
+    try:
+        if llm_provider == "mistral":
+            raw = _call_mistral(fix_prompt, "Generate the missing prompts now.")
+        else:
+            raw = _call_gemini(fix_prompt, "Generate the missing prompts now.")
+
+        raw = raw.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        raw = raw.strip()
+
+        data = json.loads(raw)
+        fix_map = {}
+        for p in data.get("prompts", []):
+            sid = p.get("scene_id") or p.get("sceneId")
+            prompt = p.get("image_prompt") or p.get("imagePrompt") or p.get("prompt", "")
+            if sid and prompt.strip():
+                fix_map[sid] = prompt
+
+        for s in scenes:
+            if not s["image_prompt"].strip() and s["scene_id"] in fix_map:
+                s["image_prompt"] = fix_map[s["scene_id"]]
+                print(f"[Prompts] ✓ Fixed scene {s['scene_id']}")
+
+    except Exception as e:
+        print(f"[Prompts] Retry failed: {e}")
+
+    return scenes
 
 
 def _call_gemini(system_prompt: str, user_message: str) -> str:
@@ -159,6 +232,7 @@ def _call_mistral(system_prompt: str, user_message: str) -> str:
     client = Mistral(api_key=api_key)
     response = client.chat.complete(
         model=LLM_MODELS["mistral"],
+        max_tokens=16384,
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": system_prompt},
